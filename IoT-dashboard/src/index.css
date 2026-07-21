@@ -1,114 +1,209 @@
 @import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"] *));
 
+/* ── Font ── */
 @font-face {
-  font-family: 'Space Grotesk';
-  src: url('./assets/fonts/SpaceGrotesk.ttf') format('truetype');
+  font-family: "Space Grotesk";
+  src: url("./assets/fonts/SpaceGrotesk.ttf") format("truetype");
   font-weight: 300 700;
   font-display: swap;
 }
 
 @theme {
-  --font-sans: 'Space Grotesk', system-ui, sans-serif;
-  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: "Space Grotesk", system-ui, sans-serif;
 }
 
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-}
-
+/* ── Base ── */
 html,
 body {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--bg);
-  color: var(--text);
+  scrollbar-width: none;
 }
 
-body {
-  margin: 0;
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+/* Dark theme body */
+[data-theme="dark"] body,
+[data-theme="dark"] html {
+  background: #0f172a;
+  color: #f1f5f9;
 }
 
-h1,
-h2 {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
-  font-weight: 500;
-  color: var(--text-h);
+/* ── Shared card style ── */
+.card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    0 4px 12px rgba(0, 0, 0, 0.03);
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+[data-theme="dark"] .card {
+  background: #060c1c;
 }
 
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+/* ── Toggle switch ── */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 56px;
+  height: 30px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-p {
-  margin: 0;
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
 }
 
-code,
-.counter {
-  font-family: ui-monospace, Consolas, monospace;
-  display: inline-flex;
+.toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: all 0.3s;
+  border-radius: 30px;
+}
+
+.toggle-slider::before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 24px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: all 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .toggle-slider::before {
+  transform: translateX(26px);
+}
+
+/* Smaller toggle on very small screens */
+@media (max-width: 380px) {
+  .toggle-switch { width: 46px !important; height: 24px !important; }
+  .toggle-slider::before { width: 18px !important; height: 18px !important; }
+  input:checked + .toggle-slider::before { transform: translateX(22px) !important; }
+}
+
+/* Per-color checked states */
+.toggle-switch.red input:checked + .toggle-slider {
+  background-color: #ef4444;
+}
+.toggle-switch.blue input:checked + .toggle-slider {
+  background-color: #3b82f6;
+}
+.toggle-switch.yellow input:checked + .toggle-slider {
+  background-color: #f59e0b;
+}
+.toggle-switch.green input:checked + .toggle-slider {
+  background-color: #22c55e;
+}
+.toggle-switch.gray input:checked + .toggle-slider {
+  background-color: #94a3b8;
+}
+.toggle-switch.purple input:checked + .toggle-slider {
+  background-color: #a855f7;
+}
+.toggle-switch.teal input:checked + .toggle-slider {
+  background-color: #0d9488;
+}
+
+[data-theme="dark"] .toggle-slider {
+  background-color: #475569;
+}
+
+/* ── Range slider ── */
+.device-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 130px;
+  height: 8px;
+  background: linear-gradient(to right, #3b82f6 0%, #3b82f6 0%, #e2e8f0 0%, #e2e8f0 100%);
   border-radius: 4px;
-  color: var(--text-h);
+  outline: none;
+  cursor: pointer;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.device-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+  border: 3px solid white;
+}
+
+.device-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+  border: 3px solid white;
+}
+
+[data-theme="dark"] .device-slider {
+  background: linear-gradient(to right, #3b82f6 0%, #3b82f6 0%, #475569 0%, #475569 100%) !important;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Splash screen animations ── */
+@keyframes splash-wave {
+  0%   { transform: scale(0.5); opacity: 0.6; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+
+@keyframes splash-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50%      { transform: scale(1.05); opacity: 1; box-shadow: 0 0 20px rgba(59,130,246,0.2); }
+}
+
+@keyframes splash-dot {
+  0%, 80%, 100% { opacity: 0; }
+  40%           { opacity: 1; }
+}
+
+@keyframes splash-progress {
+  0%   { width: 0%; }
+  60%  { width: 65%; }
+  100% { width: 100%; }
+}
+
+/* ── Responsive card padding ── */
+@media (max-width: 640px) {
+  .card {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+}
+
+/* ── Dark theme scrollbar ── */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #475569 !important;
 }
