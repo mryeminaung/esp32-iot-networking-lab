@@ -1,5 +1,6 @@
 import { useTheme } from "@/hooks/useTheme";
 import ActivityLog from "./ActivityLog";
+import CardContainer from "./CardContainer";
 import Footer from "./Footer";
 import Header from "./Header";
 import QuickControls from "./QuickControls";
@@ -16,18 +17,19 @@ export default function Dashboard() {
 
 			{/* Two-column grid — stacks at 900px.
           Right column is minmax(0, 380px) so it never overflows on tiny screens. */}
-			<div className="grid grid-cols-1 lg:grid-cols-[1fr_minmax(0,380px)] gap-4 sm:gap-6 items-start">
-				{/* Left column */}
-				<QuickControls />
-
-				{/* Right column */}
-				<div className="flex flex-col gap-4 sm:gap-6">
+			<div className="grid gap-5 lg:grid-cols-[400px_1fr]">
+				<aside className="space-y-5">
+					<QuickControls />
 					<SystemInfo />
+				</aside>
+
+				<main className="space-y-5">
+					<CardContainer />
 					<SensorCard />
-				</div>
+					<ActivityLog />
+				</main>
 			</div>
 
-			<ActivityLog />
 			<Footer />
 		</div>
 	);
