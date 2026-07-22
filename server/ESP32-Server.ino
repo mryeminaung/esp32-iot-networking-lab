@@ -16,10 +16,15 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ArduinoJson.h>
+#include <ESPmDNS.h>
 
 // WiFi Configuration
-const char *ssid = "YOUR-WIFI-NAME";
-const char *password = "YOUR-WIFI-PASSWORD";
+const char *ssid = "MIIT";
+const char *password = "Thanks123";
+const char *hostName = "esp32-server";
+
+// Global Variables
+WebServer server(80);
 
 // Pin Definitions
 #define RED_LIGHT_PIN 2
@@ -34,9 +39,6 @@ const char *password = "YOUR-WIFI-PASSWORD";
 // PWM Configuration
 #define PWM_FREQUENCY 1000
 #define PWM_RESOLUTION 8
-
-// Global Variables
-WebServer server(80);
 
 // Device States
 bool redLightState = false;
@@ -62,6 +64,7 @@ void handleRoot();
 void handleControl();
 void handleSystem();
 void handleSensors();
+void handleAll();
 void handleCORSPreflight();
 
 // Device control helpers
@@ -83,9 +86,8 @@ void setup()
   pinMode(PUMP_PIN, OUTPUT);
   pinMode(SOIL_MOISTURE_PIN, INPUT);
 
-  // Setup PWM
+  // Setup PWM (fan only, relay is now toggle)
   ledcAttach(FAN_PIN, PWM_FREQUENCY, PWM_RESOLUTION);
-  ledcAttach(RELAY_PIN, PWM_FREQUENCY, PWM_RESOLUTION);
 
   // Initial state - all off
   digitalWrite(RED_LIGHT_PIN, LOW);
@@ -93,10 +95,12 @@ void setup()
   digitalWrite(GREEN_LIGHT_PIN, LOW);
   digitalWrite(WHITE_LIGHT_PIN, LOW);
   ledcWrite(FAN_PIN, 0);
-  ledcWrite(RELAY_PIN, 0);
+  digitalWrite(RELAY_PIN, LOW);
   digitalWrite(PUMP_PIN, LOW);
 
   startTime = millis();
+
+  WiFi.mode(WIFI_STA);
 
   // Connect to WiFi as Station
   Serial.print("Connecting to WiFi: ");
@@ -113,6 +117,17 @@ void setup()
   IPAddress IP = WiFi.localIP();
   Serial.print("Connected! IP address: ");
   Serial.println(IP);
+
+  // Initialize mDNS
+  if (MDNS.begin(hostName))
+  {
+    MDNS.addService("http", "tcp", 80);
+    Serial.println("mDNS responder started: http://esp32-server.local");
+  }
+  else
+  {
+    Serial.println("Error starting mDNS responder");
+  }
 
   // Handle CORS preflight (OPTIONS) for all routes
   server.onNotFound([]()
@@ -131,24 +146,67 @@ void setup()
   server.on("/system", HTTP_OPTIONS, handleCORSPreflight);
   server.on("/sensors", HTTP_GET, handleSensors);
   server.on("/sensors", HTTP_OPTIONS, handleCORSPreflight);
+  server.on("/all", HTTP_GET, handleAll);
+  server.on("/all", HTTP_OPTIONS, handleCORSPreflight);
 
   server.enableCORS(true);
   server.begin();
   Serial.println("HTTP server started on port 80");
   Serial.print("Open http://");
   Serial.print(WiFi.localIP());
-  Serial.println(" in browser");
+  Serial.println(" or http://esp32-server.local in browser");
 }
 
 void loop()
 {
   server.handleClient();
 
-  // Read sensors periodically
+  // WiFi reconnect guard
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    static unsigned long lastWifiCheck = 0;
+    if (millis() - lastWifiCheck > 5000)
+    {
+      lastWifiCheck = millis();
+      Serial.println("WiFi disconnected, reconnecting...");
+      WiFi.reconnect();
+    }
+  }
+
+  // Read sensors and auto-control R/Y/G LEDs
   if (millis() - lastSensorRead > sensorReadInterval)
   {
     soilMoistureValue = readSoilMoisture();
     lastSensorRead = millis();
+
+    // Auto LED based on soil moisture
+    if (soilMoistureValue <= 30)
+    {
+      redLightState = true;
+      yellowLightState = false;
+      greenLightState = false;
+      setLight(RED_LIGHT_PIN, true);
+      setLight(YELLOW_LIGHT_PIN, false);
+      setLight(GREEN_LIGHT_PIN, false);
+    }
+    else if (soilMoistureValue < 50)
+    {
+      redLightState = false;
+      yellowLightState = true;
+      greenLightState = false;
+      setLight(RED_LIGHT_PIN, false);
+      setLight(YELLOW_LIGHT_PIN, true);
+      setLight(GREEN_LIGHT_PIN, false);
+    }
+    else
+    {
+      redLightState = false;
+      yellowLightState = false;
+      greenLightState = true;
+      setLight(RED_LIGHT_PIN, false);
+      setLight(YELLOW_LIGHT_PIN, false);
+      setLight(GREEN_LIGHT_PIN, true);
+    }
   }
 }
 
@@ -187,16 +245,19 @@ void handleControl()
       {
         redLightState = state;
         setLight(RED_LIGHT_PIN, state);
+        lastSensorRead = millis();  // defer auto-cycle so manual state persists
       }
       else if (deviceStr == "yellow_light")
       {
         yellowLightState = state;
         setLight(YELLOW_LIGHT_PIN, state);
+        lastSensorRead = millis();  // defer auto-cycle so manual state persists
       }
       else if (deviceStr == "green_light")
       {
         greenLightState = state;
         setLight(GREEN_LIGHT_PIN, state);
+        lastSensorRead = millis();  // defer auto-cycle so manual state persists
       }
       else if (deviceStr == "white_light")
       {
@@ -212,8 +273,7 @@ void handleControl()
       else if (deviceStr == "relay")
       {
         relayState = state;
-        relayValue = value;
-        setPWMDevice(RELAY_PIN, state, value);
+        digitalWrite(RELAY_PIN, state ? HIGH : LOW);
       }
       else if (deviceStr == "water_pump")
       {
@@ -259,18 +319,74 @@ void handleSystem()
   doc["mac"] = macStr;
   doc["uptime"] = uptimeStr;
   doc["freeHeap"] = ESP.getFreeHeap() / 1024;
+  doc["status"] = "Online";
+  doc["mode"] = "STA Mode";
+  doc["wifi"] = WiFi.SSID();
 
   String response;
   serializeJson(doc, response);
   server.send(200, "application/json", response);
 }
 
-// Sensors endpoint
+// Sensors & Devices endpoint
 void handleSensors()
 {
-  StaticJsonDocument<200> doc;
+  StaticJsonDocument<400> doc;
 
   doc["soilMoisture"] = soilMoistureValue;
+  doc["red_light"] = redLightState;
+  doc["yellow_light"] = yellowLightState;
+  doc["green_light"] = greenLightState;
+  doc["white_light"] = whiteLightState;
+  doc["fan"] = fanState;
+  doc["fanValue"] = fanValue;
+  doc["relay"] = relayState;
+  doc["water_pump"] = pumpState;
+
+  String response;
+  serializeJson(doc, response);
+  server.send(200, "application/json", response);
+}
+
+// Combined /all endpoint (system + sensors in one call)
+void handleAll()
+{
+  StaticJsonDocument<512> doc;
+
+  // ── System info ──
+  unsigned long uptime = (millis() - startTime) / 1000;
+  int days = uptime / 86400;
+  int hours = (uptime % 86400) / 3600;
+  int minutes = (uptime % 3600) / 60;
+  int seconds = uptime % 60;
+
+  char uptimeStr[20];
+  sprintf(uptimeStr, "%dd %02d:%02d:%02d", days, hours, minutes, seconds);
+
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+  char macStr[18];
+  sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+  doc["device"] = "ESP32 DevKit V1";
+  doc["ip"] = WiFi.localIP().toString();
+  doc["mac"] = macStr;
+  doc["uptime"] = uptimeStr;
+  doc["freeHeap"] = ESP.getFreeHeap() / 1024;
+  doc["status"] = "Online";
+  doc["mode"] = "STA Mode";
+  doc["wifi"] = WiFi.SSID();
+
+  // ── Sensors / devices ──
+  doc["soilMoisture"] = soilMoistureValue;
+  doc["red_light"] = redLightState;
+  doc["yellow_light"] = yellowLightState;
+  doc["green_light"] = greenLightState;
+  doc["white_light"] = whiteLightState;
+  doc["fan"] = fanState;
+  doc["fanValue"] = fanValue;
+  doc["relay"] = relayState;
+  doc["water_pump"] = pumpState;
 
   String response;
   serializeJson(doc, response);
@@ -299,7 +415,7 @@ void setPWMDevice(int pin, bool state, int value)
 int readSoilMoisture()
 {
   int rawValue = analogRead(SOIL_MOISTURE_PIN);
-  int moisturePercent = map(rawValue, 4095, 0, 0, 100);
+  int moisturePercent = map(rawValue, 0, 4095, 100, 0);  // inverted sensor: dry=high, wet=low
   moisturePercent = constrain(moisturePercent, 0, 100);
   return moisturePercent;
 }
