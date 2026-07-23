@@ -1,4 +1,4 @@
-import { sendCommand } from "@/hooks/useEsp32Sync";
+import { sendCommand } from "@/features/dashboard/hooks/useEsp32Sync";
 import { useDashboardStore, type DeviceKey } from "@/store/dashboard";
 import { Droplets, Fan, Lightbulb, Square } from "lucide-react";
 import ControlItem from "./ControlItem";
