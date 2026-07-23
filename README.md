@@ -19,6 +19,55 @@ The project covers:
 - Sensor data monitoring
 - Automated irrigation system
 
+## Repository Structure
+
+```
+├── server/                  # ESP32 firmware (Arduino)
+│   ├── ESP32-Server.ino     # Main sketch — REST API
+│   ├── ArduinoJson.h        # JSON library (bundled)
+│   ├── README.md            # Firmware overview
+│   ├── docs/ARCHITECTURE.md # Hardware & API design
+│   └── docs/WORKFLOW.md     # Flash & test workflow
+│
+├── IoT-dashboard/           # Web dashboard (React + Vite)
+│   ├── src/
+│   │   ├── api/             # Axios client & ESP32 API layer
+│   │   ├── store/           # Zustand state management
+│   │   └── features/        # Dashboard & Experiments UI
+│   ├── README.md            # Dashboard overview
+│   ├── docs/ARCHITECTURE.md # Frontend architecture & data flow
+│   └── docs/WORKFLOW.md     # Dev setup & release checklist
+│
+├── experiments/             # Experiment reference materials
+├── LICENSE
+└── README.md                # This file
+```
+
+## Quick Start
+
+### 1. Flash the ESP32
+
+```bash
+cd server
+# Open ESP32-Server.ino in Arduino IDE or PlatformIO
+# Update WiFi credentials (ssid / password)
+# Upload to ESP32 DevKit V1
+# Open Serial Monitor (115200 baud) to confirm IP
+```
+
+### 2. Start the Dashboard
+
+```bash
+cd IoT-dashboard
+pnpm install
+cp .env.example .env
+# Set VITE_ESP32_API_URL to the ESP32's IP address
+# Set VITE_DASHBOARD_URL to the Router's IP address:3000 for QR code generation
+pnpm dev
+```
+
+Open `http://localhost:3000` — the dashboard connects to the ESP32 and begins polling sensor data every 3 seconds.
+
 ## Technologies Used
 
 ### Hardware
@@ -37,7 +86,9 @@ The project covers:
 - HTTP REST API
 - JSON Communication
 - React (Dashboard)
+- TypeScript
 - Tailwind CSS
+- Zustand (State Management)
 
 ## Experiments
 
@@ -89,3 +140,5 @@ Through this project, the following concepts are explored:
 Capstone Project — **Arduino Based IoT Networking Over Local Area**
 
 ---
+
+LICENSE: [MIT License](./LICENSE)
