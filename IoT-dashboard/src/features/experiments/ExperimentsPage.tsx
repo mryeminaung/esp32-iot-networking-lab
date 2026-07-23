@@ -1,0 +1,148 @@
+import { ArrowLeft, Beaker } from "lucide-react"
+import { useState } from "react"
+import { Link } from "react-router"
+import { useTheme } from "@/hooks/useTheme"
+import { experiments } from "./experiments"
+import type { Experiment } from "./experiments"
+import ExperimentCard from "./ExperimentCard"
+import ExperimentDetail from "./ExperimentDetail"
+
+export default function ExperimentsPage() {
+	useTheme()
+
+	const [selected, setSelected] = useState<Experiment | null>(null)
+
+	const regular = experiments.filter((e) => !e.featured)
+	const featured = experiments.find((e) => e.featured)
+	const completed = experiments.filter((e) => e.status === "completed").length
+	const total = experiments.length
+	const progress = total > 0 ? Math.round((completed / total) * 100) : 0
+
+	return (
+		<div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+			{/* Back link */}
+			<Link
+				to="/"
+				className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors mb-6">
+				<ArrowLeft size={16} />
+				Back to Dashboard
+			</Link>
+
+			{/* Header */}
+			<div className="card mb-6">
+				<div className="flex items-center gap-4 mb-3">
+					<div className="w-11 h-11 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center shrink-0">
+						<Beaker size={22} />
+					</div>
+					<div>
+						<h1 className="text-[1.3rem] sm:text-[1.5rem] font-bold">
+							ESP32 Experiments
+						</h1>
+						<p className="text-[0.8125rem] text-slate-400 dark:text-slate-500 mt-0.5">
+							Track IoT networking experiments and implementation status
+						</p>
+					</div>
+				</div>
+
+				{/* Progress bar */}
+				<div className="mt-4">
+					<div className="flex items-center justify-between text-sm mb-2">
+						<span className="text-slate-500 dark:text-slate-400 font-medium">
+							Progress
+						</span>
+						<span className="text-slate-500 dark:text-slate-400 font-medium">
+							{completed}/{total} Completed
+						</span>
+					</div>
+					<div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+						<div
+							className="h-full rounded-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-700 ease-out"
+							style={{ width: `${progress}%` }}
+						/>
+					</div>
+				</div>
+			</div>
+
+			{/* Regular experiment cards — 2-column grid */}
+			<div className="grid gap-4 sm:gap-5 md:grid-cols-2 mb-5">
+				{regular.map((exp) => (
+					<ExperimentCard
+						key={exp.id}
+						experiment={exp}
+						onClick={() => setSelected(exp)}
+					/>
+				))}
+			</div>
+
+			{/* Featured "Final Project" card — full width */}
+			{featured && (
+				<button
+					onClick={() => setSelected(featured)}
+					className="card w-full text-left cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+					<div
+						className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 ${featured.iconBg} ${featured.iconColor}`}>
+						<featured.icon size={26} />
+					</div>
+
+					<div className="flex-1 min-w-0">
+						<div className="flex items-start justify-between gap-4 mb-2">
+							<h3 className="text-[1.1rem] font-bold">{featured.title}</h3>
+							<span
+								className={`shrink-0 text-[0.7rem] font-semibold px-2.5 py-1 rounded-full border flex items-center gap-1.5 ${
+									featured.status === "completed"
+										? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700/30"
+										: featured.status === "in-progress"
+											? "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-700/30"
+											: "bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-600"
+								}`}>
+								<span
+									className={`w-1.5 h-1.5 rounded-full ${
+										featured.status === "completed"
+											? "bg-green-500"
+											: featured.status === "in-progress"
+												? "bg-yellow-500"
+												: "bg-slate-300"
+									}`}
+								/>
+								{featured.status === "completed"
+									? "Completed"
+									: featured.status === "in-progress"
+										? "In Progress"
+										: "Planned"}
+							</span>
+						</div>
+
+						<p className="text-[0.85rem] text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+							{featured.description}
+						</p>
+
+						<div className="flex items-center justify-between gap-3">
+							<div className="flex flex-wrap gap-1.5">
+								{featured.tags.map((tag) => (
+									<span
+										key={tag}
+										className="text-[0.7rem] font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+										{tag}
+									</span>
+								))}
+							</div>
+
+							<span className="shrink-0 text-[0.8rem] font-semibold text-blue-500 flex items-center gap-1">
+								View Details
+								<span className="text-[0.85rem]">&rarr;</span>
+							</span>
+						</div>
+					</div>
+				</button>
+			)}
+
+			{/* Detail dialog */}
+			{selected && (
+				<ExperimentDetail
+					experiment={selected}
+					onClose={() => setSelected(null)}
+				/>
+			)}
+		</div>
+	)
+}

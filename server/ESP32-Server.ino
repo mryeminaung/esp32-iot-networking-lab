@@ -19,8 +19,8 @@
 #include <ESPmDNS.h>
 
 // WiFi Configuration
-const char *ssid = "MIIT";
-const char *password = "Thanks123";
+const char *ssid = "LOL";
+const char *password = "hello124";
 const char *hostName = "esp32-server";
 
 // Global Variables

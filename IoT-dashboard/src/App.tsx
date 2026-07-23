@@ -1,17 +1,15 @@
-import { useState } from "react"
-import SplashScreen from "@/components/dashboard/SplashScreen"
-import Dashboard from "@/components/dashboard/Dashboard"
-import useEsp32Sync from "@/hooks/useEsp32Sync"
+import DashboardPage from "@/features/dashboard/DashboardPage"
+import ExperimentsPage from "@/features/experiments/ExperimentsPage"
+import { BrowserRouter, Navigate, Route, Routes } from "react-router"
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(true)
-
-  useEsp32Sync()
-
-  return (
-    <>
-      {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
-      <Dashboard />
-    </>
-  )
+	return (
+		<BrowserRouter>
+			<Routes>
+				<Route path="/" element={<DashboardPage />} />
+				<Route path="/experiments" element={<ExperimentsPage />} />
+				<Route path="*" element={<Navigate to="/" replace />} />
+			</Routes>
+		</BrowserRouter>
+	)
 }

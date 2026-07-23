@@ -1,6 +1,7 @@
 import { useDashboardStore } from "@/store/dashboard";
-import { Cpu, Moon, QrCode, Sun } from "lucide-react";
+import { Cpu, FlaskConical, Moon, QrCode, Sun } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router";
 import DeviceQRCode from "./DeviceQRCode";
 
 export default function Header() {
@@ -53,6 +54,17 @@ export default function Header() {
 									: "Disconnected"}
 						</span>
 					</div>
+
+					{/* Experiments link */}
+					<Link
+						to="/experiments"
+						className="w-[38px] h-[38px] sm:w-11 sm:h-11 rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all shrink-0"
+						title="Experiments">
+						<FlaskConical
+							size={16}
+							className="sm:size-5"
+						/>
+					</Link>
 
 					{/* QR code button */}
 					<button
